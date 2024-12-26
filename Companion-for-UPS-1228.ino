@@ -17,14 +17,19 @@
 
 #include "uptime.h"     // https://github.com/YiannisBourkelis/Uptime-Library
 
+#include <microDS18B20.h>   // https://github.com/GyverLibs/microDS18B20/
 
-#define PIN_LED1        D1
-#define PIN_LED2        D2
-#define PIN_PG          D3
-#define PIN_MBSW        D5
+#define PIN_MBSW        D1
+#define PIN_PG          D2
 #define BUTTON          D6
 
 #define MAX_ALLOWED_INPUT 127
+
+#define R1 220
+#define R2 100
+
+// DS18B20 sensor
+MicroDS18B20<0> thermometer;
 
 // Create CLI Object
 SimpleCLI cli;
@@ -40,12 +45,8 @@ TickTwo timer3( usual_report, 60000);
 
 byte external_power_state = HIGH;
 byte external_power_state_prev = HIGH;
-byte led1_state = HIGH;
-byte led1_state_prev = HIGH;
-byte led2_state = HIGH;
-byte led2_state_prev = HIGH;
-byte mbsw_state = HIGH;
-byte mbsw_state_prev = HIGH;
+byte mbsw_state = LOW;
+byte mbsw_state_prev = LOW;
 // unsigned int last_change_state = 0;
 bool first_report = true;
 bool enable_cli = false;
@@ -55,10 +56,14 @@ char str_uptime[17] = "0d0h0m0s";
 char in_str[128] = {0};
 char str_post[1024];
 
+float correction_value = 1.048;
+unsigned int R1add = 1270;
+
 // EEPROM data
 uint16_t mark = 0x55aa;
 uint8_t standalone = 0;
 char ups_name[33] = {0};
+char ups_model[33] = {0};
 char ssid[33] = {0};
 char passw[65] = {0};
 char host[65] = {0};
@@ -72,7 +77,8 @@ uint8_t wifi_tries = 0;
 
 #define PT_STANDALONE       sizeof(mark)
 #define PT_UPS_NAME         PT_STANDALONE + sizeof(standalone)
-#define PT_SSID             PT_UPS_NAME + sizeof(ups_name)
+#define PT_UPS_MODEL        PT_STANDALONE + sizeof(ups_name)
+#define PT_SSID             PT_UPS_NAME + sizeof(ups_model)
 #define PT_PASSW            PT_SSID + sizeof(ssid)
 #define PT_HOST             PT_PASSW + sizeof(passw)
 #define PT_PORT             PT_HOST + sizeof(host)
@@ -90,6 +96,7 @@ uint8_t wifi_tries = 0;
 // Commands
 Command cmdStandalone;
 Command cmdUpsName;
+Command cmdUpsModel;
 Command cmdSsid;
 Command cmdPassw;
 Command cmdShow;
@@ -105,9 +112,9 @@ Command cmdHelp;
 
 
 void setup() {
-#ifdef DEBUG_SERIAL
   Serial.begin(115200,SERIAL_8N1);
   delay(50);
+#ifdef DEBUG_SERIAL
   Serial.println(".\nStart debugging serial");
 #endif
 
@@ -128,10 +135,6 @@ void setup() {
 
   if ( enable_cli ) {
     // Command line mode
-#if not defined DEBUG_SERIAL
-    Serial.begin(115200);
-    delay(50);
-#endif
     SetSimpleCli();
     Serial.println("Usage:");
     Serial.println(cli.toString());
@@ -140,8 +143,6 @@ void setup() {
     }
   }else{
     pinMode(PIN_PG, INPUT);
-    pinMode(PIN_LED1,  INPUT);
-    pinMode(PIN_LED2,  INPUT);
     pinMode(PIN_MBSW,  INPUT);
     pinMode(BUTTON,  INPUT);
 
@@ -160,11 +161,10 @@ void setup() {
       Serial.println("Enter to standalone mode");
     }
 #endif
+    thermometer.requestTemp();
     timer1.start();
     timer2.start();
-    if ( standalone == 0 ) {
-      timer3.start();
-    }
+    timer3.start();
   }
 }
 
@@ -179,9 +179,7 @@ void loop(){
 void loop_usual_mode() {
   timer1.update();
   timer2.update();
-  if ( standalone == 0 ) {
-    timer3.update();
-  }
+  timer3.update();
 }
 
 void check_ups_status(){
@@ -198,53 +196,19 @@ void check_ups_status(){
     external_power_state_prev = external_power_state;
     if (external_power_state == LOW) {
       send_alarm_ab_input( false );
-#ifdef DEBUG_SERIAL
       Serial.println(FPSTR(msg_pwr_fail));
-#endif
     } else {
       send_alarm_ab_input( true );
-#ifdef DEBUG_SERIAL
       Serial.println(FPSTR(msg_pwr_restore));
-#endif
-    }
-  }
-
-  led1_state = digitalRead(PIN_LED1);   
-  if (led1_state_prev != led1_state) {
-    led1_state_prev = led1_state;
-    if (led1_state == LOW) {
-#ifdef DEBUG_SERIAL
-      Serial.println("Led1 ON");
-#endif
-    } else {
-#ifdef DEBUG_SERIAL
-      Serial.println("Led1 off");
-#endif
-    }
-  }
-
-  led2_state = digitalRead(PIN_LED2);   
-  if (led2_state_prev != led2_state) {
-    led2_state_prev = led2_state;
-    if (led2_state == LOW) {
-#ifdef DEBUG_SERIAL
-      Serial.println("Led2 ON");
-#endif
-    } else {
-#ifdef DEBUG_SERIAL
-      Serial.println("Led2 off");
-#endif
     }
   }
 
   mbsw_state = digitalRead(PIN_MBSW);   
   if (mbsw_state_prev != mbsw_state) {
     mbsw_state_prev = mbsw_state;
-    if (mbsw_state == LOW) {
+    if (mbsw_state == HIGH) {
       send_alarm_last_breath();
-#ifdef DEBUG_SERIAL
       Serial.println(FPSTR(msg_battery_low));
-#endif
     } 
   }
 
@@ -267,3 +231,52 @@ bool is_button_pressed() {
   }
   return(false);
 }
+
+void usual_report(){
+  char str_batt[12] = {0};
+  char str_power[10] = {0};
+  char str_batt_volt[10] = {0};
+  char str_degrees[10] = {0};
+  char str_tmp[128];
+  float temperature = -99;
+  float battery_voltage = 0;
+  
+  if ( thermometer.readTemp() ) { 
+    temperature = thermometer.getTemp();
+  } 
+  dtostrf(temperature,1,1,str_degrees);
+  
+  if ( external_power_state == HIGH ) {
+    strncpy(str_power, "powerOk", sizeof(str_power)-1);
+  } else {
+    strncpy(str_power, "nopower", sizeof(str_power)-1);
+  }
+ 
+  if ( mbsw_state == LOW ) {
+    strncpy(str_batt, "batteryOk", sizeof(str_batt)-1);
+  } else {
+    strncpy(str_batt, "batteryLow", sizeof(str_batt)-1);
+  }
+
+  battery_voltage = analogRead(A0) * (( R1 + R1add + R2 ) / correction_value / R2 ) / 1024;
+  dtostrf(battery_voltage,1,2,str_batt_volt);
+  
+  sprintf(str_tmp, "%s,%s,%s,%s", str_power, str_batt, str_degrees, str_batt_volt );
+  Serial.println( str_tmp );
+  
+  if ( standalone == 1 ) {
+    return;
+  }
+
+  memset(str_tmp,0,sizeof(str_tmp));
+  sprintf(str_tmp, "&data1=%s,%s,%s,%d,%s,%s", str_power, str_batt, WiFi.localIP().toString().c_str(), WiFi.RSSI(), str_degrees, str_batt_volt );
+  
+  make_post_header();
+  strncat(str_post, str_tmp, sizeof(str_post)-1);
+
+#ifdef DBG_WIFI
+  Serial.print("Prepared data: \""); Serial.print(str_post); Serial.println("\"");
+#endif
+  send_data();
+}
+

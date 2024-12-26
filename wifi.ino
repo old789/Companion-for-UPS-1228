@@ -7,7 +7,12 @@ void make_post_header(){
     strncat(str_post, "&name=", sizeof(str_post)-1);
     strncat(str_post, ups_name, sizeof(str_post)-1);
   } 
-      
+ 
+ if (strlen(ups_model) > 0) {
+    strncat(str_post, "&model=", sizeof(str_post)-1);
+    strncat(str_post, ups_model, sizeof(str_post)-1);
+  }
+  
   if ( first_report ) {
     strncat(str_post, "&boot=1", sizeof(str_post)-1);
   }
@@ -56,34 +61,6 @@ void send_alarm_last_breath() {
 #ifdef DBG_WIFI
   Serial.print("Alarm: \""); Serial.print(str_post); Serial.println("\"");
 #endif
-}
-
-void usual_report(){
-  char str_batt[12] = {0};
-  char str_power[10] = {0};
-  char str_tmp[128];
- 
-  if ( external_power_state == HIGH ) {
-    strncpy(str_power, "powerOk", sizeof(str_power)-1);
-  } else {
-    strncpy(str_power, "nopower", sizeof(str_power)-1);
-  }
- 
-  if ( mbsw_state == HIGH ) {
-    strncpy(str_batt, "batteryOk", sizeof(str_batt)-1);
-  } else {
-    strncpy(str_batt, "batteryLow", sizeof(str_batt)-1);
-  }
-  
-  sprintf(str_tmp, "&data1=%s,%s,%s,%d", str_power, str_batt, WiFi.localIP(), WiFi.RSSI() );
-  
-  make_post_header();
-  strncat(str_post, str_tmp, sizeof(str_post)-1);
-
-#ifdef DBG_WIFI
-  Serial.print("Prepared data: \""); Serial.print(str_post); Serial.println("\"");
-#endif
-  send_data();
 }
 
 void send_data(){
