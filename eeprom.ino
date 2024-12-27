@@ -6,6 +6,7 @@ void eeprom_save(){
   EEPROM.put(0, mark);
   EEPROM.put(PT_STANDALONE, standalone);
   EEPROM.put(PT_UPS_NAME, ups_name);
+  EEPROM.put(PT_UPS_MODEL, ups_model);
   EEPROM.put(PT_SSID, ssid);
   EEPROM.put(PT_PASSW, passw);
   EEPROM.put(PT_HOST, host);
@@ -47,6 +48,7 @@ unsigned long ram_crc() {
   memcpy(buf, &mark, sizeof(mark));
   memcpy(buf+PT_STANDALONE, &standalone, sizeof(standalone));
   memcpy(buf+PT_UPS_NAME, &ups_name, strlen(ups_name));
+  memcpy(buf+PT_UPS_MODEL, &ups_model, strlen(ups_model));
   memcpy(buf+PT_SSID, &ssid, strlen(ssid));
   memcpy(buf+PT_PASSW, &passw, strlen(passw));
   memcpy(buf+PT_HOST, &host, strlen(host));
@@ -91,6 +93,7 @@ const char msg3[] = "EEPROM read successful";
 
   EEPROM.get(PT_STANDALONE, standalone);
   EEPROM.get(PT_UPS_NAME, ups_name);
+  EEPROM.get(PT_UPS_MODEL, ups_model);
   EEPROM.get(PT_SSID, ssid);
   EEPROM.get(PT_PASSW, passw);
   EEPROM.get(PT_HOST, host);
