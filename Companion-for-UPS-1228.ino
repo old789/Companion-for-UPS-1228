@@ -47,7 +47,7 @@ byte external_power_state = HIGH;
 byte external_power_state_prev = HIGH;
 byte mbsw_state = LOW;
 byte mbsw_state_prev = LOW;
-// unsigned int last_change_state = 0;
+bool last_breath_taken = false;
 bool first_report = true;
 bool enable_cli = false;
 bool eeprom_bad = false;
@@ -186,7 +186,7 @@ void check_ups_status(){
 #if defined ( DEBUG_SERIAL )
   PGM_P msg_pwr_fail = PSTR("External power failed");
   PGM_P msg_pwr_restore = PSTR("External power restored");
-  PGM_P msg_battery_low = PSTR("Low battery");
+  PGM_P msg_battery_low = PSTR("Battery discharged");
   PGM_P msg_battery_ok = PSTR("Battery is Ok");
 #endif
 
@@ -200,6 +200,10 @@ void check_ups_status(){
     } else {
       send_alarm_ab_input( true );
       Serial.println(FPSTR(msg_pwr_restore));
+      if ( last_breath_taken ) {
+        Serial.println(FPSTR(msg_battery_ok));
+        last_breath_taken = false;
+      }
     }
   }
 
@@ -207,8 +211,11 @@ void check_ups_status(){
   if (mbsw_state_prev != mbsw_state) {
     mbsw_state_prev = mbsw_state;
     if (mbsw_state == HIGH) {
-      send_alarm_last_breath();
-      Serial.println(FPSTR(msg_battery_low));
+      if ( ! last_breath_taken ) {
+        send_alarm_last_breath();
+        Serial.println(FPSTR(msg_battery_low));
+        last_breath_taken = true;
+      }
     } 
   }
 
