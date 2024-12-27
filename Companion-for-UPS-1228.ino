@@ -207,6 +207,7 @@ void check_ups_status(){
     }
   }
 
+  // read state of a MB_SW pin
   mbsw_state = digitalRead(PIN_MBSW);   
   if (mbsw_state_prev != mbsw_state) {
     mbsw_state_prev = mbsw_state;
