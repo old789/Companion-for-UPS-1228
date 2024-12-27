@@ -34,11 +34,13 @@ SimpleCLI cli;
 void count_uptime();
 void usual_report();
 void check_ups_status();
+void check_wifi();
 
 // Create timers object
 TickTwo timer1( count_uptime, 1000);
 TickTwo timer2( check_ups_status, 100);
 TickTwo timer3( usual_report, 60000);
+TickTwo timer4( check_wifi, 3600000);
 
 byte external_power_state = HIGH;
 byte external_power_state_prev = HIGH;
@@ -48,6 +50,9 @@ bool last_breath_taken = false;
 bool first_report = true;
 bool enable_cli = false;
 bool eeprom_bad = false;
+bool wifi_not_connected = false;
+bool standalone_mode = false;
+uint8_t wifi_fail_check = 0;
 int httpResponseCode = 0;
 char str_uptime[17] = "0d0h0m0s";
 char in_str[128] = {0};
@@ -144,6 +149,7 @@ void setup() {
     pinMode(BUTTON,  INPUT);
 
     if ( eeprom_bad ) {
+      Serial.println("\nEEPROM error or bad config");
       standalone = 1;
     }
  
@@ -152,16 +158,19 @@ void setup() {
       Serial.println("Enter to network mode");
 #endif
       wifi_init();
-    }
+    } else {
+      standalone_mode = true;
 #ifdef DEBUG_SERIAL
-    else{
       Serial.println("Enter to standalone mode");
-    }
 #endif
+    }
     thermometer.requestTemp();
     timer1.start();
     timer2.start();
     timer3.start();
+    if ( standalone == 0 ) {
+      timer4.start();
+    }
   }
 }
 
@@ -177,6 +186,9 @@ void loop_usual_mode() {
   timer1.update();
   timer2.update();
   timer3.update();
+  if ( standalone == 0 ) {
+    timer4.update();
+  }
 }
 
 void check_ups_status(){
@@ -218,6 +230,31 @@ void check_ups_status(){
   }
 
 
+}
+
+void check_wifi() {
+#ifdef DEBUG_SERIAL
+  Serial.println("Check WiFi");
+#endif
+  if ( wifi_not_connected ) {
+#ifdef DEBUG_SERIAL
+    Serial.println("Wifi not connected after boot - system reset");
+#endif
+    ESP.reset();
+  }
+  if ( WiFi.status() != WL_CONNECTED ) {
+#ifdef DEBUG_SERIAL
+    Serial.print("Wifi lost connection, check attempt ");  Serial.println(wifi_fail_check);
+#endif
+    if ( ++wifi_fail_check > 3 ) {
+#ifdef DEBUG_SERIAL
+      Serial.print("Reset system because Wifi lost connection for hours");
+#endif
+      ESP.reset();
+    }
+  } else {
+    wifi_fail_check = 0;
+  }
 }
 
 void count_uptime() {
@@ -269,7 +306,7 @@ void usual_report(){
   sprintf(str_tmp, "%s,%s,%s,%s", str_power, str_batt, str_degrees, str_batt_volt );
   Serial.println( str_tmp );
   
-  if ( standalone == 1 ) {
+  if ( standalone_mode ) {
     return;
   }
 

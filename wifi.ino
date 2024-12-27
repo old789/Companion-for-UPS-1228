@@ -19,7 +19,7 @@ void make_post_header(){
 }  
 
 void send_alarm_ab_input( bool wtf ){
-  if ( standalone == 1 ) {
+  if ( standalone_mode ) {
       return;
   }
   make_post_header();
@@ -52,7 +52,7 @@ void send_alarm_ab_battery( bool wtf ) {
 */
 
 void send_alarm_last_breath() {
-  if ( standalone == 1 ) {
+  if ( standalone_mode ) {
       return;
   }
   make_post_header();
@@ -64,7 +64,7 @@ void send_alarm_last_breath() {
 }
 
 void send_data(){
-  if ( standalone == 1 ) {
+  if ( standalone_mode ) {
 #ifdef DBG_WIFI
     Serial.println("Standalone mode, do nothing");
 #endif
@@ -127,7 +127,7 @@ void send_data(){
 }
 
 void wifi_init(){
-uint8_t wifi_tries = 3;
+
 #ifdef DBG_WIFI
   Serial.print("Connecting to "); Serial.print(ssid); Serial.println(" ...");
 #endif
@@ -142,19 +142,19 @@ uint8_t wifi_tries = 3;
 #ifdef DBG_WIFI
     Serial.print(i); Serial.print(' ');
 #endif
-    if ( i > 1500 ) {  // if don't connect - wait, then next try
-      if ( ++wifi_tries > 3 ) {
-        ESP.reset();
-      } 
-      delay(150000);
-#ifdef DBG_WIFI
-      Serial.print("Try "); Serial.print(wifi_tries); Serial.println(" connect to WiFi");
-#endif
+    if ( i > 1500 ) {  // if don't connect - continue
+      continue;
     }
   }
   
-  if ( wifi_tries != 0 ) {
-    wifi_tries=0;
+  if ( WiFi.status() != WL_CONNECTED ) {
+    standalone_mode = true;
+    wifi_not_connected = true;
+#ifdef DBG_WIFI
+    Serial.println('\n');
+    Serial.println("Connection not established, falling to standalone mode");
+#endif
+    return;
   }
 
   WiFi.setAutoReconnect(true);
