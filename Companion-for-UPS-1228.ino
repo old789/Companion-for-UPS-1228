@@ -77,8 +77,8 @@ uint8_t wifi_tries = 0;
 
 #define PT_STANDALONE       sizeof(mark)
 #define PT_UPS_NAME         PT_STANDALONE + sizeof(standalone)
-#define PT_UPS_MODEL        PT_STANDALONE + sizeof(ups_name)
-#define PT_SSID             PT_UPS_NAME + sizeof(ups_model)
+#define PT_UPS_MODEL        PT_UPS_NAME + sizeof(ups_name)
+#define PT_SSID             PT_UPS_MODEL + sizeof(ups_model)
 #define PT_PASSW            PT_SSID + sizeof(ssid)
 #define PT_HOST             PT_PASSW + sizeof(passw)
 #define PT_PORT             PT_HOST + sizeof(host)
