@@ -127,6 +127,7 @@ void send_data(){
 }
 
 void wifi_init(){
+uint8_t wifi_tries = 3;
 #ifdef DBG_WIFI
   Serial.print("Connecting to "); Serial.print(ssid); Serial.println(" ...");
 #endif

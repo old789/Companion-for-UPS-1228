@@ -25,9 +25,6 @@
 
 #define MAX_ALLOWED_INPUT 127
 
-#define R1 220
-#define R2 100
-
 // DS18B20 sensor
 MicroDS18B20<0> thermometer;
 
@@ -56,8 +53,8 @@ char str_uptime[17] = "0d0h0m0s";
 char in_str[128] = {0};
 char str_post[1024];
 
-float correction_value = 1.048;
-unsigned int R1add = 1270;
+// float correction_value = 1.048;
+// unsigned int R1add = 1270;
 
 // EEPROM data
 uint16_t mark = 0x55aa;
@@ -72,8 +69,9 @@ char uri[128] = {0};
 uint8_t http_auth = 0;
 char http_user[33] = {0};
 char http_passw[33] = {0};
-uint8_t wifi_tries = 0;
-// uint8_t after_party = 0;
+float R1 = 1;
+float R2 = 1;
+float correction_value = 1;
 
 #define PT_STANDALONE       sizeof(mark)
 #define PT_UPS_NAME         PT_STANDALONE + sizeof(standalone)
@@ -86,12 +84,11 @@ uint8_t wifi_tries = 0;
 #define PT_AUTH             PT_URI + sizeof(uri)
 #define PT_HUSER            PT_AUTH + sizeof(http_auth)
 #define PT_HPASSW           PT_HUSER + sizeof(http_user)
-#define PT_WIFI_TRIES       PT_HPASSW + sizeof(http_passw)
-#define PT_CRC              PT_WIFI_TRIES + sizeof(wifi_tries)
-#define SIZE_EEPROM         PT_WIFI_TRIES + sizeof(wifi_tries) - 1 // PT_CRC d'not count
-// #define PT_AFTER_PARTY      PT_WIFI_TRIES + sizeof(wifi_tries)
-// #define PT_CRC              PT_AFTER_PARTY + sizeof(after_party)
-// #define SIZE_EEPROM         PT_AFTER_PARTY + sizeof(after_party) - 1 // PT_CRC d'not count
+#define PT_R1               PT_HPASSW + sizeof(http_passw)
+#define PT_R2               PT_R1 + sizeof(R1)
+#define PT_CORR             PT_R2 + sizeof(R2)
+#define PT_CRC              PT_CORR + sizeof(correction_value)
+#define SIZE_EEPROM         PT_CORR + sizeof(correction_value) - 1 // PT_CRC d'not count
 
 // Commands
 Command cmdStandalone;
@@ -103,6 +100,9 @@ Command cmdShow;
 Command cmdHost;
 Command cmdPort;
 Command cmdUri;
+Command cmdR1;
+Command cmdR2;
+Command cmdCorrection;
 Command cmdHauth;
 Command cmdHuser;
 Command cmdHpassw;
@@ -266,7 +266,7 @@ void usual_report(){
     strncpy(str_batt, "batteryLow", sizeof(str_batt)-1);
   }
 
-  battery_voltage = analogRead(A0) * (( R1 + R1add + R2 ) / correction_value / R2 ) / 1024;
+  battery_voltage = analogRead(A0) * (( R1 + R2 ) / R2 / correction_value ) / 1024;
   dtostrf(battery_voltage,1,2,str_batt_volt);
   
   sprintf(str_tmp, "%s,%s,%s,%s", str_power, str_batt, str_degrees, str_batt_volt );

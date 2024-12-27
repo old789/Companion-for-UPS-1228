@@ -15,8 +15,9 @@ void eeprom_save(){
   EEPROM.put(PT_AUTH, http_auth);
   EEPROM.put(PT_HUSER, http_user);
   EEPROM.put(PT_HPASSW, http_passw);
-  EEPROM.put(PT_WIFI_TRIES, wifi_tries);
-  // EEPROM.put(PT_AFTER_PARTY, after_party);
+  EEPROM.put(PT_R1, R1);
+  EEPROM.put(PT_R2, R2);
+  EEPROM.put(PT_CORR, correction_value);
   EEPROM.put(PT_CRC, ram_crc());
   EEPROM.commit();
 #ifdef DEBUG_SERIAL
@@ -57,8 +58,9 @@ unsigned long ram_crc() {
   memcpy(buf+PT_AUTH, &http_auth, sizeof(http_auth));
   memcpy(buf+PT_HUSER, &http_user, strlen(http_user));
   memcpy(buf+PT_HPASSW, &http_passw, strlen(http_passw));
-  memcpy(buf+PT_WIFI_TRIES, &wifi_tries, sizeof(wifi_tries));
-  // memcpy(buf+PT_AFTER_PARTY, &after_party, sizeof(after_party));
+  memcpy(buf+PT_R1, &R1, sizeof(R1));
+  memcpy(buf+PT_R2, &R2, sizeof(R2));
+  memcpy(buf+PT_CORR, &correction_value, sizeof(correction_value));
 
   for (uint16_t index = 0 ; index <= SIZE_EEPROM  ; ++index) {
     crc = crc_table[(crc ^ buf[index]) & 0x0f] ^ (crc >> 4);
@@ -103,8 +105,9 @@ const char msg3[] = "EEPROM read successful";
   EEPROM.get(PT_AUTH, http_auth);
   EEPROM.get(PT_HUSER, http_user);
   EEPROM.get(PT_HPASSW, http_passw);
-  EEPROM.get(PT_WIFI_TRIES, wifi_tries);
-  // EEPROM.get(PT_AFTER_PARTY, after_party);
+  EEPROM.get(PT_R1, R1);
+  EEPROM.get(PT_R2, R2);
+  EEPROM.get(PT_CORR, correction_value);
 
   if ( crc != ram_crc() ){
     if ( enable_cli )

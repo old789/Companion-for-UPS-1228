@@ -34,6 +34,15 @@ void SetSimpleCli(){
   cmdHpassw = cli.addSingleArgCmd("hpassw");
   cmdHpassw.setDescription(" Set HTTP(S) password");
 
+  cmdR1 = cli.addSingleArgCmd("R1");
+  cmdR1.setDescription(" Set the resistance of a R1 resistor in a divider (kOhm, float)");
+
+  cmdR2 = cli.addSingleArgCmd("R2");
+  cmdR2.setDescription(" Set the resistance of a R2 resistor in a divider (kOhm, float)");
+
+  cmdCorrection = cli.addSingleArgCmd("corr");
+  cmdCorrection.setDescription(" Set the correction coefficient for the battery voltage (float)");
+
   cmdShow = cli.addSingleArgCmd("show");
   cmdShow.setDescription(" Show configuration");
 
@@ -66,7 +75,8 @@ void  loop_cli_mode(){
     Command c = cli.getCmd();
     // argNum = c.countArgs();
     argLen = c.getArg(0).getValue().length();
-    unsigned int i=0;
+    unsigned int i = 0;
+    float j = 0;
 
     if (c == cmdStandalone) {
       if ( argLen == 0 ) {
@@ -169,9 +179,43 @@ void  loop_cli_mode(){
         c.getArg(0).getValue().toCharArray(http_passw, sizeof(http_passw)-1 );
         Serial.println("HTTP(S) password set to \"" + c.getArg(0).getValue() + "\"");
       }
+    } else if (c == cmdR1) {
+      if ( argLen == 0 ) {
+        Serial.println(emptyArg);
+      }else{
+        j = c.getArg(0).getValue().toDouble();
+        if ( j <= 0 ) {
+          Serial.println("Argument must be greater then 0");
+        }else{
+          R1 = j;
+          Serial.print("R1 set to \""); Serial.print(R1); Serial.println("\"");
+        }
+      }
+    } else if (c == cmdR2) {
+      if ( argLen == 0 ) {
+        Serial.println(emptyArg);
+      }else{
+        j = c.getArg(0).getValue().toDouble();
+        if ( j <= 0 ) {
+          Serial.println("Argument must be greater then 0");
+        }else{
+          R2 = j;
+          Serial.print("R2 set to \""); Serial.print(R1); Serial.println("\"");
+        }
+      }
+    } else if (c == cmdCorrection) {
+      if ( argLen == 0 ) {
+        Serial.println(emptyArg);
+      }else{
+        j = c.getArg(0).getValue().toDouble();
+        if ( j <= 0 ) {
+          Serial.println("Argument must be greater then 0");
+        }else{
+          correction_value = j;
+          Serial.print("Correction value set to \""); Serial.print(correction_value, 4); Serial.println("\"");
+        }
+      }
     } else if (c == cmdSave) {
-      wifi_tries = 0;
-      // after_party = 0;
       eeprom_save();
       Serial.println("Configuration saved to EEPROM");
     } else if (c == cmdShow) {
@@ -186,6 +230,9 @@ void  loop_cli_mode(){
       Serial.print("Host = \"");Serial.print(host);Serial.println("\"");
       Serial.print("Port = \"");Serial.print(port);Serial.println("\"");
       Serial.print("URI = \"");Serial.print(uri);Serial.println("\"");
+      Serial.print("R1 = \"");Serial.print(R1);Serial.println("\"");
+      Serial.print("R2 = \"");Serial.print(R2);Serial.println("\"");
+      Serial.print("Corection = \"");Serial.print(correction_value, 4);Serial.println("\"");
       if ( http_auth > 0 )
         Serial.println("HTTP(S) authorization enabled");
       else
