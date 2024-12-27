@@ -53,9 +53,6 @@ char str_uptime[17] = "0d0h0m0s";
 char in_str[128] = {0};
 char str_post[1024];
 
-// float correction_value = 1.048;
-// unsigned int R1add = 1270;
-
 // EEPROM data
 uint16_t mark = 0x55aa;
 uint8_t standalone = 0;
