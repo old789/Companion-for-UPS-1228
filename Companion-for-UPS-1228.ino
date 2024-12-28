@@ -314,7 +314,7 @@ void usual_report(){
   }
 
   memset(str_tmp,0,sizeof(str_tmp));
-  sprintf(str_tmp, "&data1=%s,%s,%s,%d,%s,%s", str_power, str_batt, WiFi.localIP().toString().c_str(), WiFi.RSSI(), str_degrees, str_batt_volt );
+  sprintf(str_tmp, "&data=%s,%s,%s,%d,%s,%s", str_power, str_batt, WiFi.localIP().toString().c_str(), WiFi.RSSI(), str_degrees, str_batt_volt );
   
   make_post_header();
   strncat(str_post, str_tmp, sizeof(str_post)-1);
