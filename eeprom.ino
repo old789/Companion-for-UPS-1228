@@ -1,6 +1,6 @@
 
 void eeprom_save(){
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
   const char msg[] = "Config saved to EEPROM";
 #endif
   EEPROM.put(0, mark);
@@ -20,7 +20,7 @@ void eeprom_save(){
   EEPROM.put(PT_CORR, correction_value);
   EEPROM.put(PT_CRC, ram_crc());
   EEPROM.commit();
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
     Serial.println(msg);
 #endif
 }
@@ -39,7 +39,7 @@ unsigned long ram_crc() {
   if ( ! buf ){
     if ( enable_cli )
       Serial.println(msg);
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
     Serial.println(msg);
 #endif
     return(0);
@@ -78,7 +78,7 @@ const char msg11[] = "EEPROM read ERROR: incorrect marker, need ";
 const char msg12[] = "H but read ";
 const char msg13[] = "H";
 const char msg2[] = "EEPROM read ERROR: incorrect crc";
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
 const char msg3[] = "EEPROM read successful";
 #endif
 
@@ -87,7 +87,7 @@ const char msg3[] = "EEPROM read successful";
     if ( enable_cli ) {
       Serial.print(msg11);Serial.print(mark,HEX);Serial.print(msg12);Serial.print(m,HEX);Serial.println(msg13);
     }
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
     Serial.print(msg11);Serial.print(mark,HEX);Serial.print(msg12);Serial.print(m,HEX);Serial.println(msg13);
 #endif
     return(false);
@@ -112,25 +112,25 @@ const char msg3[] = "EEPROM read successful";
   if ( crc != ram_crc() ){
     if ( enable_cli )
       Serial.println(msg2);
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
     Serial.println(msg2);
 #endif
     return(false);
   }
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
     Serial.println(msg3);
 #endif
   return(true);
 }
 
 bool is_conf_correct(){
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
   const char msg1[] = "Config incorrect";
   const char msg2[] = "Config good";
 #endif
 
   if  ( standalone > 1 ) {
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
     Serial.println(msg1);
 #endif
     return(false);
@@ -143,7 +143,7 @@ bool is_conf_correct(){
         ( port == 0 ) ||
         ( strlen(uri) == 0 ) 
         ){
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
       Serial.println(msg1);
 #endif
       return(false);
@@ -151,7 +151,7 @@ bool is_conf_correct(){
       if (( strlen(http_user) == 0 ) || 
           ( strlen(http_passw) == 0 )
          ){
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
       Serial.println(msg1);
 #endif
       return(false);
@@ -159,7 +159,7 @@ bool is_conf_correct(){
     }
   }
 
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
     Serial.println(msg2);
 #endif
   return(true);

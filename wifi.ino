@@ -35,22 +35,6 @@ void send_alarm_ab_input( bool wtf ){
   send_data();
 }
 
-/*
-void send_alarm_ab_battery( bool wtf ) {
-  make_post_header();
-  if ( wtf ) {
-    strncat(str_post, "&alarm=battery is Ok", sizeof(str_post)-1);
-  } else {
-    strncat(str_post, "&alarm=low battery", sizeof(str_post)-1);
-  }
-  
-#ifdef DBG_WIFI
-  Serial.print("Alarm: \""); Serial.print(str_post); Serial.println("\"");
-#endif
-  send_data();
-}
-*/
-
 void send_alarm_last_breath() {
   if ( standalone_mode ) {
       return;
@@ -127,7 +111,10 @@ void send_data(){
 }
 
 void wifi_init(){
-
+  PGM_P msg_conn_fail = PSTR("Connection not established, falling to standalone mode");
+  PGM_P msg_conn = PSTR("Connection established! ");
+  PGM_P msg_ip = PSTR("IP address: ");
+  PGM_P msg_rssi = PSTR("RSSI: ");
 #ifdef DBG_WIFI
   Serial.print("Connecting to "); Serial.print(ssid); Serial.println(" ...");
 #endif
@@ -152,8 +139,8 @@ void wifi_init(){
     wifi_not_connected = true;
 #ifdef DBG_WIFI
     Serial.println('\n');
-    Serial.println("Connection not established, falling to standalone mode");
 #endif
+    Serial.println(FPSTR(msg_conn_fail));
     return;
   }
 
@@ -162,8 +149,8 @@ void wifi_init(){
 
 #ifdef DBG_WIFI
   Serial.println('\n');
-  Serial.println("Connection established!");
-  Serial.print("IP address: ");Serial.println(WiFi.localIP());
-  Serial.print("RSSI: ");Serial.println(WiFi.RSSI());
 #endif
+  Serial.print(FPSTR(msg_conn));
+  Serial.print(FPSTR(msg_ip)); Serial.println(WiFi.localIP());
+  Serial.print(FPSTR(msg_rssi)); Serial.println(WiFi.RSSI());
 }

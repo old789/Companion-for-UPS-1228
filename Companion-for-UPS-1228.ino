@@ -1,9 +1,5 @@
-#define DEBUG_SERIAL  // because just "DEBUG" defined in PZEM004Tv30.h ( legacy :)
-#define DBG_WIFI    // because "DEBUG_WIFI" defined in a WiFiClient library
-
-#if defined ( DBG_WIFI ) && not defined ( DEBUG_SERIAL )
-#define DEBUG_SERIAL
-#endif
+#define DBG_SERIAL  // because just "DBG" defined in PZEM004Tv30.h ( legacy :)
+#define DBG_WIFI    // because "DBG_WIFI" defined in a WiFiClient library
 
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
@@ -114,14 +110,15 @@ Command cmdHelp;
 
 
 void setup() {
-  Serial.begin(115200,SERIAL_8N1);
+  PGM_P msg_bad_eeprom = PSTR("\nEEPROM error or bad config");
+  Serial.begin(115200);
   delay(50);
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
   Serial.println(".\nStart debugging serial");
 #endif
 
   EEPROM.begin(2048);
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
   Serial.println("Init EEPROM");
 #endif
 
@@ -141,7 +138,7 @@ void setup() {
     Serial.println("Usage:");
     Serial.println(cli.toString());
     if ( eeprom_bad ){
-      Serial.println("\nEEPROM error or bad config");
+      Serial.println(FPSTR(msg_bad_eeprom));
     }
   }else{
     pinMode(PIN_PG, INPUT);
@@ -149,18 +146,18 @@ void setup() {
     pinMode(BUTTON,  INPUT);
 
     if ( eeprom_bad ) {
-      Serial.println("\nEEPROM error or bad config");
+      Serial.println(FPSTR(msg_bad_eeprom));
       standalone = 1;
     }
  
     if ( standalone == 0 ) {
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
       Serial.println("Enter to network mode");
 #endif
       wifi_init();
     } else {
       standalone_mode = true;
-#ifdef DEBUG_SERIAL
+#ifdef DBG_SERIAL
       Serial.println("Enter to standalone mode");
 #endif
     }
@@ -192,12 +189,10 @@ void loop_usual_mode() {
 }
 
 void check_ups_status(){
-#if defined ( DEBUG_SERIAL )
   PGM_P msg_pwr_fail = PSTR("External power failed");
   PGM_P msg_pwr_restore = PSTR("External power restored");
   PGM_P msg_battery_low = PSTR("Battery discharged");
   PGM_P msg_battery_ok = PSTR("Battery is Ok");
-#endif
 
   // read and logging external power state
   external_power_state = digitalRead(PIN_PG);   
@@ -233,23 +228,26 @@ void check_ups_status(){
 }
 
 void check_wifi() {
-#ifdef DEBUG_SERIAL
+  PGM_P msg_conn_fail = PSTR("Reboot because WiFi is not connected");
+#ifdef DBG_WIFI
   Serial.println("Check WiFi");
 #endif
   if ( wifi_not_connected ) {
-#ifdef DEBUG_SERIAL
+#ifdef DBG_WIFI
     Serial.println("Wifi not connected after boot - system reset");
 #endif
+    Serial.println(FPSTR(msg_conn_fail));
     ESP.reset();
   }
   if ( WiFi.status() != WL_CONNECTED ) {
-#ifdef DEBUG_SERIAL
+#ifdef DBG_WIFI
     Serial.print("Wifi lost connection, check attempt ");  Serial.println(wifi_fail_check);
 #endif
     if ( ++wifi_fail_check > 3 ) {
-#ifdef DEBUG_SERIAL
+#ifdef DBG_WIFI
       Serial.print("Reset system because Wifi lost connection for hours");
 #endif
+      Serial.println(FPSTR(msg_conn_fail));
       ESP.reset();
     }
   } else {
@@ -299,8 +297,10 @@ void usual_report(){
   } else {
     strncpy(str_batt, "batteryLow", sizeof(str_batt)-1);
   }
-
-  battery_voltage = analogRead(A0) * (( R1 + R2 ) / R2 / correction_value ) / 1024;
+  
+  if ( ( R2 > 0 ) and ( correction_value > 0 ) ) {
+    battery_voltage = analogRead(A0) * (( R1 + R2 ) / R2 / correction_value ) / 1024;
+  }
   dtostrf(battery_voltage,1,2,str_batt_volt);
   
   sprintf(str_tmp, "%s,%s,%s,%s", str_power, str_batt, str_degrees, str_batt_volt );
