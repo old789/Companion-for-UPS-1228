@@ -1,5 +1,5 @@
 #define DBG_SERIAL  // because just "DBG" defined in PZEM004Tv30.h ( legacy :)
-#define DBG_WIFI    // because "DBG_WIFI" defined in a WiFiClient library
+#define DBG_WIFI    // because "DEBUG_WIFI" defined in a WiFiClient library
 
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
@@ -20,6 +20,7 @@
 #define BUTTON          D6
 
 #define MAX_ALLOWED_INPUT 127
+#define START_DELAY     10000
 
 // DS18B20 sensor
 MicroDS18B20<0> thermometer;
@@ -111,6 +112,7 @@ Command cmdHelp;
 
 void setup() {
   PGM_P msg_bad_eeprom = PSTR("\nEEPROM error or bad config");
+
   Serial.begin(115200);
   delay(50);
 #ifdef DBG_SERIAL
@@ -154,6 +156,7 @@ void setup() {
 #ifdef DBG_SERIAL
       Serial.println("Enter to network mode");
 #endif
+      sleep(START_DELAY);
       wifi_init();
     } else {
       standalone_mode = true;
