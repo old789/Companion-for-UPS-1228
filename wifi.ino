@@ -112,9 +112,9 @@ void send_data(){
 
 void wifi_init(){
   PGM_P msg_conn_fail = PSTR("Connection not established, falling to standalone mode");
-  PGM_P msg_conn = PSTR("Connection established! ");
-  PGM_P msg_ip = PSTR("IP address: ");
-  PGM_P msg_rssi = PSTR("RSSI: ");
+  PGM_P msg_conn = PSTR("Connection established!");
+  PGM_P msg_ip = PSTR(" IP address: ");
+  PGM_P msg_rssi = PSTR(" RSSI: ");
 #ifdef DBG_WIFI
   Serial.print("Connecting to "); Serial.print(ssid); Serial.println(" ...");
 #endif
@@ -151,6 +151,6 @@ void wifi_init(){
   Serial.println('\n');
 #endif
   Serial.print(FPSTR(msg_conn));
-  Serial.print(FPSTR(msg_ip)); Serial.println(WiFi.localIP());
+  Serial.print(FPSTR(msg_ip)); Serial.print(WiFi.localIP());
   Serial.print(FPSTR(msg_rssi)); Serial.println(WiFi.RSSI());
 }

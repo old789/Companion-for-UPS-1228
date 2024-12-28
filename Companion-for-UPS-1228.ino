@@ -156,7 +156,7 @@ void setup() {
 #ifdef DBG_SERIAL
       Serial.println("Enter to network mode");
 #endif
-      sleep(START_DELAY);
+      delay(START_DELAY);
       wifi_init();
     } else {
       standalone_mode = true;
