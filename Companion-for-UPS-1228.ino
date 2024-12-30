@@ -288,6 +288,7 @@ void usual_report(){
     temperature = thermometer.getTemp();
   } 
   dtostrf(temperature,1,1,str_degrees);
+  thermometer.requestTemp();
   
   if ( external_power_state == HIGH ) {
     strncpy(str_power, "powerOk", sizeof(str_power)-1);
