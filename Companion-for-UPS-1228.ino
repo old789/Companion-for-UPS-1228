@@ -194,8 +194,8 @@ void loop_usual_mode() {
 void check_ups_status(){
   PGM_P msg_pwr_fail = PSTR("External power failed");
   PGM_P msg_pwr_restore = PSTR("External power restored");
-  PGM_P msg_battery_low = PSTR("Battery discharged");
-  PGM_P msg_battery_ok = PSTR("Battery is Ok");
+  PGM_P msg_battery_disch = PSTR("Battery discharged");
+  PGM_P msg_battery_chrg = PSTR("Battery is charging");
 
   // read and logging external power state
   external_power_state = digitalRead(PIN_PG);   
@@ -208,7 +208,7 @@ void check_ups_status(){
       send_alarm_ab_input( true );
       Serial.println(FPSTR(msg_pwr_restore));
       if ( last_breath_taken ) {
-        Serial.println(FPSTR(msg_battery_ok));
+        Serial.println(FPSTR(msg_battery_chrg));
         last_breath_taken = false;
       }
     }
@@ -221,7 +221,7 @@ void check_ups_status(){
     if (mbsw_state == HIGH) {
       if ( ! last_breath_taken ) {
         send_alarm_last_breath();
-        Serial.println(FPSTR(msg_battery_low));
+        Serial.println(FPSTR(msg_battery_disch));
         last_breath_taken = true;
       }
     } 
