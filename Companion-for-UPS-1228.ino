@@ -22,8 +22,12 @@
 #define MAX_ALLOWED_INPUT 127
 #define START_DELAY     10000
 
+#define NO_BATTERY_VOLTAGE_THRESHOLD  3.0
+#define LOW_BATTERY_COUNT_THRESHOLD   6
+#define NO_BATTERY_COUNT_THRESHOLD    3
+
 // DS18B20 sensor
-MicroDS18B20<0> thermometer;
+MicroDS18B20<0> thermometer;   // D3
 
 // Create CLI Object
 SimpleCLI cli;
@@ -32,12 +36,14 @@ void count_uptime();
 void usual_report();
 void check_ups_status();
 void check_wifi();
+void check_battery_voltage();
 
 // Create timers object
 TickTwo timer1( count_uptime, 1000);
 TickTwo timer2( check_ups_status, 100);
-TickTwo timer3( usual_report, 60000);
-TickTwo timer4( check_wifi, 3600000);
+TickTwo timer3( check_battery_voltage, 20000);
+TickTwo timer4( usual_report, 60000);
+TickTwo timer5( check_wifi, 3600000);
 
 byte external_power_state = HIGH;
 byte external_power_state_prev = HIGH;
@@ -50,6 +56,12 @@ bool eeprom_bad = false;
 bool wifi_not_connected = false;
 bool standalone_mode = false;
 uint8_t wifi_fail_check = 0;
+float battery_voltage = 0;
+float low_battery_voltage_threshold = 12.5;
+bool no_battery = false;
+int no_battery_count = 0;
+bool low_battery = false;
+int low_battery_count = 0;
 int httpResponseCode = 0;
 char str_uptime[17] = "0d0h0m0s";
 char in_str[128] = {0};
@@ -168,8 +180,9 @@ void setup() {
     timer1.start();
     timer2.start();
     timer3.start();
+    timer4.start();
     if ( standalone == 0 ) {
-      timer4.start();
+      timer5.start();
     }
   }
 }
@@ -186,8 +199,9 @@ void loop_usual_mode() {
   timer1.update();
   timer2.update();
   timer3.update();
+  timer4.update();
   if ( standalone == 0 ) {
-    timer4.update();
+    timer5.update();
   }
 }
 
@@ -226,8 +240,6 @@ void check_ups_status(){
       }
     } 
   }
-
-
 }
 
 void check_wifi() {
@@ -275,15 +287,74 @@ bool is_button_pressed() {
   return(false);
 }
 
+void check_battery_voltage(){
+  PGM_P msg_battery_low = PSTR("Battery low");
+  PGM_P msg_battery_good = PSTR("Battery good");
+  PGM_P msg_no_battery = PSTR("Battery disconnected");
+  PGM_P msg_battery_conn = PSTR("Battery connected");
+  if ( ( R2 > 0 ) and ( correction_value > 0 ) ) {
+    battery_voltage = analogRead(A0) * (( R1 + R2 ) / R2 / correction_value ) / 1024;
+  } else {
+    return;
+  }
+
+  if ( no_battery ) { 
+    if ( battery_voltage < low_battery_voltage_threshold ) {  // it's not mistake
+      return;
+    } else {
+      no_battery_count--;
+      if ( no_battery_count <= 0 ) {
+        // send_alarm_ab_battery(3);
+        Serial.println(FPSTR(msg_battery_conn));
+        no_battery = false;
+        no_battery_count = 0;
+      }
+    }
+  } else {
+    if ( battery_voltage < NO_BATTERY_VOLTAGE_THRESHOLD ) {
+      no_battery_count++;
+      if ( no_battery_count > NO_BATTERY_COUNT_THRESHOLD ) {
+        // send_alarm_ab_battery(2);
+        Serial.println(FPSTR(msg_no_battery));
+        no_battery = true;
+      }
+    }
+  }
+
+  if ( low_battery_voltage_threshold > 0 ) {
+    if ( low_battery ) {
+     if ( battery_voltage > low_battery_voltage_threshold ) {
+        low_battery_count--;
+        if ( low_battery_count <= 0 ) {
+          // send_alarm_ab_battery(1);
+          Serial.println(FPSTR(msg_battery_good));
+          low_battery = false;
+          low_battery_count = 0;
+        }
+      }
+    } else {
+      if ( battery_voltage > low_battery_voltage_threshold ) {
+        low_battery_count = 0;
+      } else {
+        low_battery_count++;
+        if ( low_battery_count >= LOW_BATTERY_COUNT_THRESHOLD ) {
+          send_alarm_ab_battery(0);
+          Serial.println(FPSTR(msg_battery_low));
+          low_battery = true;
+        }
+      }
+    }
+  }
+}
+
 void usual_report(){
-  char str_batt[12] = {0};
+  char str_batt[21] = {0};
   char str_power[10] = {0};
   char str_batt_volt[10] = {0};
   char str_degrees[10] = {0};
   char str_tmp[128];
   float temperature = -99;
-  float battery_voltage = 0;
-  
+
   if ( thermometer.readTemp() ) { 
     temperature = thermometer.getTemp();
   } 
@@ -296,15 +367,18 @@ void usual_report(){
     strncpy(str_power, "nopower", sizeof(str_power)-1);
   }
  
-  if ( mbsw_state == LOW ) {
-    strncpy(str_batt, "batteryOk", sizeof(str_batt)-1);
+  if ( mbsw_state == HIGH ) {
+    strncpy(str_batt, "batteryDischarged", sizeof(str_batt)-1);
   } else {
-    strncpy(str_batt, "batteryLow", sizeof(str_batt)-1);
+    if ( no_battery ) {
+      strncpy(str_batt, "noBattery", sizeof(str_batt)-1);
+    } else if ( low_battery ) {
+      strncpy(str_batt, "batteryLow", sizeof(str_batt)-1);
+    } else {
+      strncpy(str_batt, "batteryOk", sizeof(str_batt)-1);
+    }
   }
   
-  if ( ( R2 > 0 ) and ( correction_value > 0 ) ) {
-    battery_voltage = analogRead(A0) * (( R1 + R2 ) / R2 / correction_value ) / 1024;
-  }
   dtostrf(battery_voltage,1,2,str_batt_volt);
   
   sprintf(str_tmp, "%s,%s,%s,%s", str_power, str_batt, str_degrees, str_batt_volt );

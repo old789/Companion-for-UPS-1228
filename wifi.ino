@@ -35,6 +35,30 @@ void send_alarm_ab_input( bool wtf ){
   send_data();
 }
 
+void send_alarm_ab_battery( uint8_t wtf ) {
+  if ( standalone_mode ) {
+      return;
+  }
+  make_post_header();
+  switch ( wtf ) {
+    case 3: 
+      strncat(str_post, "&alarm=battery connected", sizeof(str_post)-1);
+      break;
+    case 2:
+      strncat(str_post, "&alarm=battery disconnected", sizeof(str_post)-1);
+      break;
+    case 1: 
+      strncat(str_post, "&alarm=battery good", sizeof(str_post)-1);
+      break;
+    default:
+      strncat(str_post, "&alarm=battery low", sizeof(str_post)-1);
+  }
+  send_data();
+#ifdef DBG_WIFI
+  Serial.print("Alarm: \""); Serial.print(str_post); Serial.println("\"");
+#endif
+}
+
 void send_alarm_last_breath() {
   if ( standalone_mode ) {
       return;
