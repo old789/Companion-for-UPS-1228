@@ -18,6 +18,7 @@ void eeprom_save(){
   EEPROM.put(PT_R1, R1);
   EEPROM.put(PT_R2, R2);
   EEPROM.put(PT_CORR, correction_value);
+  EEPROM.put(PT_LV, low_battery_voltage_threshold);
   EEPROM.put(PT_CRC, ram_crc());
   EEPROM.commit();
 #ifdef DBG_SERIAL
@@ -61,6 +62,7 @@ unsigned long ram_crc() {
   memcpy(buf+PT_R1, &R1, sizeof(R1));
   memcpy(buf+PT_R2, &R2, sizeof(R2));
   memcpy(buf+PT_CORR, &correction_value, sizeof(correction_value));
+  memcpy(buf+PT_LV, &low_battery_voltage_threshold, sizeof(low_battery_voltage_threshold));
 
   for (uint16_t index = 0 ; index <= SIZE_EEPROM  ; ++index) {
     crc = crc_table[(crc ^ buf[index]) & 0x0f] ^ (crc >> 4);
@@ -108,6 +110,7 @@ const char msg3[] = "EEPROM read successful";
   EEPROM.get(PT_R1, R1);
   EEPROM.get(PT_R2, R2);
   EEPROM.get(PT_CORR, correction_value);
+  EEPROM.get(PT_LV, low_battery_voltage_threshold);
 
   if ( crc != ram_crc() ){
     if ( enable_cli )

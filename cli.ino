@@ -43,6 +43,9 @@ void SetSimpleCli(){
   cmdCorrection = cli.addSingleArgCmd("corr");
   cmdCorrection.setDescription(" Set the correction coefficient for the battery voltage (float)");
 
+  cmdLowVolt = cli.addSingleArgCmd("low");
+  cmdLowVolt.setDescription(" Set low battery voltage ( 0 - disable, volts, float)");
+
   cmdShow = cli.addSingleArgCmd("show");
   cmdShow.setDescription(" Show configuration");
 
@@ -215,6 +218,22 @@ void  loop_cli_mode(){
           Serial.print("Correction value set to \""); Serial.print(correction_value, 4); Serial.println("\"");
         }
       }
+    } else if (c == cmdLowVolt) {
+      if ( argLen == 0 ) {
+        Serial.println(emptyArg);
+      }else{
+        j = c.getArg(0).getValue().toDouble();
+        if ( j < 0 ) {
+          Serial.println("Argument must be 0 or greater");
+        }else{
+          low_battery_voltage_threshold = j;
+          if ( low_battery_voltage_threshold == 0 ) {
+            Serial.println("Checking low voltage of the battery disabled");
+          } else {
+            Serial.print("Low battery voltage set to \""); Serial.print(low_battery_voltage_threshold); Serial.println("\"");
+          }
+        }
+      }
     } else if (c == cmdSave) {
       eeprom_save();
       Serial.println("Configuration saved to EEPROM");
@@ -233,6 +252,11 @@ void  loop_cli_mode(){
       Serial.print("R1 = \"");Serial.print(R1);Serial.println("\"");
       Serial.print("R2 = \"");Serial.print(R2);Serial.println("\"");
       Serial.print("Corection = \"");Serial.print(correction_value, 4);Serial.println("\"");
+      if ( low_battery_voltage_threshold == 0 ) {
+        Serial.println("Checking low voltage of the battery disabled");
+      } else {
+        Serial.print("Low battery voltage = \"");Serial.print(low_battery_voltage_threshold);Serial.println("\"");
+      }
       if ( http_auth > 0 )
         Serial.println("HTTP(S) authorization enabled");
       else

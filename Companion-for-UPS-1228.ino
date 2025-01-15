@@ -57,7 +57,6 @@ bool wifi_not_connected = false;
 bool standalone_mode = false;
 uint8_t wifi_fail_check = 0;
 float battery_voltage = 0;
-float low_battery_voltage_threshold = 12.5;
 bool no_battery = false;
 int no_battery_count = 0;
 bool low_battery = false;
@@ -83,6 +82,7 @@ char http_passw[33] = {0};
 float R1 = 1;
 float R2 = 1;
 float correction_value = 1;
+float low_battery_voltage_threshold = 12.5;
 
 #define PT_STANDALONE       sizeof(mark)
 #define PT_UPS_NAME         PT_STANDALONE + sizeof(standalone)
@@ -98,8 +98,9 @@ float correction_value = 1;
 #define PT_R1               PT_HPASSW + sizeof(http_passw)
 #define PT_R2               PT_R1 + sizeof(R1)
 #define PT_CORR             PT_R2 + sizeof(R2)
-#define PT_CRC              PT_CORR + sizeof(correction_value)
-#define SIZE_EEPROM         PT_CORR + sizeof(correction_value) - 1 // PT_CRC d'not count
+#define PT_LV               PT_CORR + sizeof(correction_value)
+#define PT_CRC              PT_LV + sizeof(low_battery_voltage_threshold)
+#define SIZE_EEPROM         PT_LV + sizeof(low_battery_voltage_threshold) - 1 // PT_CRC d'not count
 
 // Commands
 Command cmdStandalone;
@@ -114,6 +115,7 @@ Command cmdUri;
 Command cmdR1;
 Command cmdR2;
 Command cmdCorrection;
+Command cmdLowVolt;
 Command cmdHauth;
 Command cmdHuser;
 Command cmdHpassw;
