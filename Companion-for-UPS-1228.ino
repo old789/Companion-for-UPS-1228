@@ -300,6 +300,7 @@ void check_battery_voltage(){
     return;
   }
 
+// check is battery connected
   if ( no_battery ) { 
     if ( battery_voltage < low_battery_voltage_threshold ) {  // it's not mistake
       return;
@@ -323,6 +324,7 @@ void check_battery_voltage(){
     }
   }
 
+// check battery level
   if ( low_battery_voltage_threshold > 0 ) {
     if ( low_battery ) {
      if ( battery_voltage > low_battery_voltage_threshold ) {
