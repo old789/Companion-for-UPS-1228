@@ -46,7 +46,7 @@ Data are transmitted in the POST request.
 | boot | always "1", this is 1st  message after boot |
 | alarm | Emergency messages like a main power failure |
 | msg | Informational messages |
-| data | Comma separated lists of main parameters: external power state, battery state, battery voltage (float), temperature (float)|
+| data | Comma separated lists of main parameters: external power state, battery state, current IP, RSSI, temperature (float), battery voltage (float)|
 
 
 
