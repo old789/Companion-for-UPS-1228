@@ -2,8 +2,8 @@
 #define DBG_WIFI    // because "DEBUG_WIFI" defined in a WiFiClient library
 
 #include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
-#include <WiFiClientSecureBearSSL.h>
+#include <ESP8266mDNS.h>
+#include <PubSubClient.h>  // https://github.com/hmueller01/pubsubclient3
 
 #include <EEPROM.h>
 
@@ -21,10 +21,14 @@
 
 #define MAX_ALLOWED_INPUT 127
 #define START_DELAY     10000
+#define UNSUCCESSFUL_ATTEMPTS_COUNT 30
 
 #define NO_BATTERY_VOLTAGE_THRESHOLD  3.0
 #define LOW_BATTERY_COUNT_THRESHOLD   6
 #define NO_BATTERY_COUNT_THRESHOLD    3
+
+WiFiClient espClient;
+PubSubClient client(espClient);
 
 // DS18B20 sensor
 MicroDS18B20<0> thermometer;   // D3
@@ -32,10 +36,13 @@ MicroDS18B20<0> thermometer;   // D3
 // Create CLI Object
 SimpleCLI cli;
 
+WiFiEventHandler on_wifi_connect_handler;
+WiFiEventHandler on_wifi_got_IP_handler;
+WiFiEventHandler on_wifi_disconnect_handler;
+
 void count_uptime();
 void usual_report();
 void check_ups_status();
-void check_wifi();
 void check_battery_voltage();
 
 // Create timers object
@@ -43,28 +50,29 @@ TickTwo timer1( count_uptime, 1000);
 TickTwo timer2( check_ups_status, 100);
 TickTwo timer3( check_battery_voltage, 20000);
 TickTwo timer4( usual_report, 60000);
-TickTwo timer5( check_wifi, 3600000);
 
 byte external_power_state = HIGH;
 byte external_power_state_prev = HIGH;
 byte mbsw_state = LOW;
 byte mbsw_state_prev = LOW;
-bool last_breath_taken = false;
-bool first_report = true;
+bool dying_gasp_taken = false;
+unsigned int unsucessfull_attempt = 0;
+bool first_message_after_boot = true;
 bool enable_cli = false;
 bool eeprom_bad = false;
-bool wifi_not_connected = false;
+bool wifi_is_ok = false;
 bool standalone_mode = false;
-uint8_t wifi_fail_check = 0;
+IPAddress mqtt_host_ip(IPADDR_NONE);
+IPAddress prev_mqtt_host_ip(IPADDR_NONE);
+uint16_t prev_mqtt_port = 1883;
 float battery_voltage = 0;
 bool no_battery = false;
 int no_battery_count = 0;
 bool low_battery = false;
 int low_battery_count = 0;
-int httpResponseCode = 0;
 char str_uptime[17] = "0d0h0m0s";
 char in_str[128] = {0};
-char str_post[1024];
+char topic_header[65] = {0};
 
 // EEPROM data
 uint16_t mark = 0x55aa;
@@ -73,12 +81,12 @@ char ups_name[33] = {0};
 char ups_model[33] = {0};
 char ssid[33] = {0};
 char passw[65] = {0};
-char host[65] = {0};
-uint16_t port = 443;
-char uri[128] = {0};
-uint8_t http_auth = 0;
-char http_user[33] = {0};
-char http_passw[33] = {0};
+unsigned int mqtt_host_resolving = 0; // Resolving mode: 0 - mDNS, 1 - DNS
+char mqtt_host[33] = {0};     // hostname ( DNS or mDNS mode ) or IP ( DNS only mode ) of a MQTT server
+uint16_t mqtt_port = 1883;
+char mqtt_user[33] = {0};     // MQTT authentification parameters
+char mqtt_passw[33] = {0};    // MQTT authentification parameters
+char mqtt_location[33] ={0};  // MQTT topic beginning
 float R1 = 1;
 float R2 = 1;
 float correction_value = 1;
@@ -89,13 +97,13 @@ float low_battery_voltage_threshold = 12.5;
 #define PT_UPS_MODEL        PT_UPS_NAME + sizeof(ups_name)
 #define PT_SSID             PT_UPS_MODEL + sizeof(ups_model)
 #define PT_PASSW            PT_SSID + sizeof(ssid)
-#define PT_HOST             PT_PASSW + sizeof(passw)
-#define PT_PORT             PT_HOST + sizeof(host)
-#define PT_URI              PT_PORT + sizeof(port)
-#define PT_AUTH             PT_URI + sizeof(uri)
-#define PT_HUSER            PT_AUTH + sizeof(http_auth)
-#define PT_HPASSW           PT_HUSER + sizeof(http_user)
-#define PT_R1               PT_HPASSW + sizeof(http_passw)
+#define PT_DNS              PT_PASSW + sizeof(passw)
+#define PT_HOST             PT_DNS + sizeof(mqtt_host_resolving)
+#define PT_PORT             PT_HOST + sizeof(mqtt_host)
+#define PT_MUSER            PT_PORT + sizeof(mqtt_port)
+#define PT_MPASSW           PT_MUSER + sizeof(mqtt_user)
+#define PT_MLOC             PT_MPASSW + sizeof(mqtt_passw)
+#define PT_R1               PT_MLOC + sizeof(mqtt_location)
 #define PT_R2               PT_R1 + sizeof(R1)
 #define PT_CORR             PT_R2 + sizeof(R2)
 #define PT_LV               PT_CORR + sizeof(correction_value)
@@ -108,17 +116,17 @@ Command cmdUpsName;
 Command cmdUpsModel;
 Command cmdSsid;
 Command cmdPassw;
-Command cmdShow;
+Command cmdDns;
 Command cmdHost;
 Command cmdPort;
-Command cmdUri;
+Command cmdMuser;
+Command cmdMpassw;
+Command cmdLoc;
 Command cmdR1;
 Command cmdR2;
 Command cmdCorrection;
 Command cmdLowVolt;
-Command cmdHauth;
-Command cmdHuser;
-Command cmdHpassw;
+Command cmdShow;
 Command cmdSave;
 Command cmdReboot;
 Command cmdHelp;
@@ -171,7 +179,11 @@ void setup() {
       Serial.println("Enter to network mode");
 #endif
       delay(START_DELAY);
+      on_wifi_connect_handler = WiFi.onStationModeConnected(on_wifi_connect);
+      on_wifi_got_IP_handler = WiFi.onStationModeGotIP(on_wifi_got_IP);
+      on_wifi_disconnect_handler = WiFi.onStationModeDisconnected(on_wifi_disconnect);
       wifi_init();
+      sprintf( topic_header, "%s/%s/", mqtt_location, ups_name );
     } else {
       standalone_mode = true;
 #ifdef DBG_SERIAL
@@ -183,9 +195,6 @@ void setup() {
     timer2.start();
     timer3.start();
     timer4.start();
-    if ( standalone == 0 ) {
-      timer5.start();
-    }
   }
 }
 
@@ -202,9 +211,6 @@ void loop_usual_mode() {
   timer2.update();
   timer3.update();
   timer4.update();
-  if ( standalone == 0 ) {
-    timer5.update();
-  }
 }
 
 void check_ups_status(){
@@ -218,14 +224,14 @@ void check_ups_status(){
   if (external_power_state_prev != external_power_state) {
     external_power_state_prev = external_power_state;
     if (external_power_state == LOW) {
-      send_alarm_ab_input( false );
+      publish_msg_ab_input( false );
       Serial.println(FPSTR(msg_pwr_fail));
     } else {
-      send_alarm_ab_input( true );
+      publish_msg_ab_input( true );
       Serial.println(FPSTR(msg_pwr_restore));
-      if ( last_breath_taken ) {
+      if ( dying_gasp_taken ) {
         Serial.println(FPSTR(msg_battery_chrg));
-        last_breath_taken = false;
+        dying_gasp_taken = false;
       }
     }
   }
@@ -235,40 +241,12 @@ void check_ups_status(){
   if (mbsw_state_prev != mbsw_state) {
     mbsw_state_prev = mbsw_state;
     if (mbsw_state == HIGH) {
-      if ( ! last_breath_taken ) {
-        send_alarm_last_breath();
+      if ( ! dying_gasp_taken ) {
+        send_dying_gasp();
         Serial.println(FPSTR(msg_battery_disch));
-        last_breath_taken = true;
+        dying_gasp_taken = true;
       }
     } 
-  }
-}
-
-void check_wifi() {
-  PGM_P msg_conn_fail = PSTR("Reboot because WiFi is not connected");
-#ifdef DBG_WIFI
-  Serial.println("Check WiFi");
-#endif
-  if ( wifi_not_connected ) {
-#ifdef DBG_WIFI
-    Serial.println("Wifi not connected after boot - system reset");
-#endif
-    Serial.println(FPSTR(msg_conn_fail));
-    ESP.reset();
-  }
-  if ( WiFi.status() != WL_CONNECTED ) {
-#ifdef DBG_WIFI
-    Serial.print("Wifi lost connection, check attempt ");  Serial.println(wifi_fail_check);
-#endif
-    if ( ++wifi_fail_check > 3 ) {
-#ifdef DBG_WIFI
-      Serial.print("Reset system because Wifi lost connection for hours");
-#endif
-      Serial.println(FPSTR(msg_conn_fail));
-      ESP.reset();
-    }
-  } else {
-    wifi_fail_check = 0;
   }
 }
 
@@ -342,7 +320,7 @@ void check_battery_voltage(){
       } else {
         low_battery_count++;
         if ( low_battery_count >= LOW_BATTERY_COUNT_THRESHOLD ) {
-          send_alarm_ab_battery(0);
+          // send_alarm_ab_battery(0);
           Serial.println(FPSTR(msg_battery_low));
           low_battery = true;
         }
@@ -392,15 +370,14 @@ void usual_report(){
     return;
   }
 
-  memset(str_tmp,0,sizeof(str_tmp));
-  sprintf(str_tmp, "&data=%s,%s,%s,%d,%s,%s", str_power, str_batt, WiFi.localIP().toString().c_str(), WiFi.RSSI(), str_degrees, str_batt_volt );
-  
-  make_post_header();
-  strncat(str_post, str_tmp, sizeof(str_post)-1);
-
-#ifdef DBG_WIFI
-  Serial.print("Prepared data: \""); Serial.print(str_post); Serial.println("\"");
-#endif
-  send_data();
+  unsucessfull_attempt++;
+  if ( wifi_is_ok and mqtt_setserver() and mqtt_publish(str_power, str_batt, str_degrees, str_batt_volt) ) {
+    unsucessfull_attempt=0;
+    return;
+  }
+  if ( unsucessfull_attempt > UNSUCCESSFUL_ATTEMPTS_COUNT ) {
+    Serial.println(F("Too many unsucessfull attempts to publish, restart"));
+    ESP.restart();
+  }
 }
 
