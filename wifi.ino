@@ -3,6 +3,8 @@ void wifi_init(){
 
   if ( WiFi.getMode() != WIFI_STA )
     WiFi.mode(WIFI_STA);
+  WiFi.hostname(ups_name);
+  //wifi_station_set_hostname(ups_name);   // not sure
   WiFi.begin(ssid, passw);             // Connect to the network
 }
 
