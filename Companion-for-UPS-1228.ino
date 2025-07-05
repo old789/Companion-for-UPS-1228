@@ -86,7 +86,7 @@ char mqtt_host[33] = {0};     // hostname ( DNS or mDNS mode ) or IP ( DNS only 
 uint16_t mqtt_port = 1883;
 char mqtt_user[33] = {0};     // MQTT authentification parameters
 char mqtt_passw[33] = {0};    // MQTT authentification parameters
-char mqtt_location[33] ={0};  // MQTT topic beginning
+char mqtt_prefix[33] ={0};  // MQTT topic beginning
 float R1 = 1;
 float R2 = 1;
 float correction_value = 1;
@@ -102,8 +102,8 @@ float low_battery_voltage_threshold = 12.5;
 #define PT_PORT             PT_HOST + sizeof(mqtt_host)
 #define PT_MUSER            PT_PORT + sizeof(mqtt_port)
 #define PT_MPASSW           PT_MUSER + sizeof(mqtt_user)
-#define PT_MLOC             PT_MPASSW + sizeof(mqtt_passw)
-#define PT_R1               PT_MLOC + sizeof(mqtt_location)
+#define PT_MPREF            PT_MPASSW + sizeof(mqtt_passw)
+#define PT_R1               PT_MPREF + sizeof(mqtt_prefix)
 #define PT_R2               PT_R1 + sizeof(R1)
 #define PT_CORR             PT_R2 + sizeof(R2)
 #define PT_LV               PT_CORR + sizeof(correction_value)
@@ -121,7 +121,7 @@ Command cmdHost;
 Command cmdPort;
 Command cmdMuser;
 Command cmdMpassw;
-Command cmdLoc;
+Command cmdPref;
 Command cmdR1;
 Command cmdR2;
 Command cmdCorrection;
@@ -183,7 +183,7 @@ void setup() {
       on_wifi_got_IP_handler = WiFi.onStationModeGotIP(on_wifi_got_IP);
       on_wifi_disconnect_handler = WiFi.onStationModeDisconnected(on_wifi_disconnect);
       wifi_init();
-      sprintf( topic_header, "%s/%s/", mqtt_location, ups_name );
+      sprintf( topic_header, "%s/%s/", mqtt_prefix, ups_name );
     } else {
       standalone_mode = true;
 #ifdef DBG_SERIAL

@@ -58,7 +58,7 @@ void send_dying_gasp(){
     Serial.println(F("MQTT server not connected"));
     return;
   }
-  sprintf( topic, "%s/system_events", mqtt_location);
+  sprintf( topic, "%s/system_events", mqtt_prefix);
   sprintf( msg, "%s dying gasp", ups_name );
   if (!client.publish(topic, msg)) {
     Serial.print(F("Error publishing to "));
@@ -75,7 +75,7 @@ bool mqtt_publish(char *str_power, char *str_batt, char *str_degrees, char *str_
   }
 
   if ( first_message_after_boot ) {
-    sprintf( topic, "%s/system_events", mqtt_location);
+    sprintf( topic, "%s/system_events", mqtt_prefix);
     sprintf( msg, "%s booted", ups_name );
     if (!client.publish(topic, msg)) {
       Serial.print(F("Error publishing to "));

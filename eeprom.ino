@@ -14,7 +14,7 @@ void eeprom_save(){
   EEPROM.put(PT_PORT, mqtt_port);
   EEPROM.put(PT_MUSER, mqtt_user);
   EEPROM.put(PT_MPASSW, mqtt_passw);
-  EEPROM.put(PT_MLOC, mqtt_location);
+  EEPROM.put(PT_MPREF, mqtt_prefix);
   EEPROM.put(PT_R1, R1);
   EEPROM.put(PT_R2, R2);
   EEPROM.put(PT_CORR, correction_value);
@@ -58,7 +58,7 @@ unsigned long ram_crc() {
   memcpy(buf+PT_PORT, &mqtt_port, sizeof(mqtt_port));
   memcpy(buf+PT_MUSER, &mqtt_user, strlen(mqtt_user));
   memcpy(buf+PT_MPASSW, &mqtt_passw, strlen(mqtt_passw));
-  memcpy(buf+PT_LOC, &mqtt_location, strlen(mqtt_location));
+  memcpy(buf+PT_MPREF, &mqtt_prefix, strlen(mqtt_prefix));
   memcpy(buf+PT_R1, &R1, sizeof(R1));
   memcpy(buf+PT_R2, &R2, sizeof(R2));
   memcpy(buf+PT_CORR, &correction_value, sizeof(correction_value));
@@ -106,7 +106,7 @@ const char msg3[] = "EEPROM read successful";
   EEPROM.get(PT_CRC, crc);
   EEPROM.get(PT_MUSER, mqtt_user);
   EEPROM.get(PT_MPASSW, mqtt_passw);
-  EEPROM.get(PT_MLOC, mqtt_location);
+  EEPROM.get(PT_MPREF, mqtt_prefix);
   EEPROM.get(PT_R1, R1);
   EEPROM.get(PT_R2, R2);
   EEPROM.get(PT_CORR, correction_value);
