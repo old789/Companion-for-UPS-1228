@@ -142,23 +142,16 @@ bool is_conf_correct(){
   if  ( standalone == 0 ) {
     if (( strlen(ssid) == 0 ) ||
         ( strlen(passw) == 0 ) ||
-        ( strlen(host) == 0 ) ||
-        ( port == 0 ) ||
-        ( strlen(uri) == 0 ) 
+        ( strlen(mqtt_host) == 0 ) ||
+        ( mqtt_port == 0 ) ||
+        ( strlen(mqtt_user) == 0 ) || 
+        ( strlen(mqtt_passw) == 0 ) ||
+        ( strlen(mqtt_prefix) == 0 ) 
         ){
 #ifdef DBG_SERIAL
       Serial.println(msg1);
 #endif
       return(false);
-    } else if ( http_auth == 1 ) {
-      if (( strlen(http_user) == 0 ) || 
-          ( strlen(http_passw) == 0 )
-         ){
-#ifdef DBG_SERIAL
-      Serial.println(msg1);
-#endif
-      return(false);
-      }
     }
   }
 

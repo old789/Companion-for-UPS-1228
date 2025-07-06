@@ -16,23 +16,23 @@ void SetSimpleCli(){
   cmdPassw = cli.addSingleArgCmd("passw");
   cmdPassw.setDescription(" Set WiFi password");
 
+  cmdDns = cli.addSingleArgCmd("dns");
+  cmdDns.setDescription(" Set resolving mode: 0 - mDNS, 1 - DNS");
+
   cmdHost = cli.addSingleArgCmd("host");
-  cmdHost.setDescription(" Set destination host ( hostname or IPv4 )");
+  cmdHost.setDescription(" Set address of a MQTT broker ( hostname or IP )");
 
   cmdPort = cli.addSingleArgCmd("port");
-  cmdPort.setDescription(" Set destination port");
+  cmdPort.setDescription(" Set port of a MQTT broker");
 
-  cmdUri = cli.addSingleArgCmd("uri");
-  cmdUri.setDescription(" Set destination URI");
+  cmdPref = cli.addSingleArgCmd("prefix");
+  cmdPref.setDescription(" Set MQTT topic starting prefix");
 
-  cmdHauth = cli.addSingleArgCmd("auth");
-  cmdHauth.setDescription(" Set HTTP(S) authorization (0/1, 1=enable)");
+  cmdMuser = cli.addSingleArgCmd("muser");
+  cmdMuser.setDescription(" Set MQTT username");
 
-  cmdHuser = cli.addSingleArgCmd("huser");
-  cmdHuser.setDescription(" Set HTTP(S) username");
-
-  cmdHpassw = cli.addSingleArgCmd("hpassw");
-  cmdHpassw.setDescription(" Set HTTP(S) password");
+  cmdMpassw = cli.addSingleArgCmd("mpassw");
+  cmdMpassw.setDescription(" Set MQTT password");
 
   cmdR1 = cli.addSingleArgCmd("R1");
   cmdR1.setDescription(" Set the resistance of a R1 resistor in a divider (kOhm, float)");
@@ -128,30 +128,31 @@ void  loop_cli_mode(){
         c.getArg(0).getValue().toCharArray(passw, sizeof(passw)-1 );
         Serial.println("WiFi password set to \"" + c.getArg(0).getValue() + "\"");
       }
+
     } else if (c == cmdHost) {
       if ( argLen == 0 ) {
         Serial.println(emptyArg);
       }else{
-        memset(host, 0, sizeof(host));
-        c.getArg(0).getValue().toCharArray(host, sizeof(host)-1 );
+        memset(mqtt_host, 0, sizeof(mqtt_host));
+        c.getArg(0).getValue().toCharArray(mqtt_host, sizeof(mqtt_host)-1 );
         Serial.println("Host is \"" + c.getArg(0).getValue() + "\"");
       }
     } else if (c == cmdPort) {
       if ( argLen == 0 ) {
         Serial.println(emptyArg);
       }else{
-        port = c.getArg(0).getValue().toInt();
+        mqtt_port = c.getArg(0).getValue().toInt();
         Serial.println("Port set to \"" + c.getArg(0).getValue() + "\"");
       }
-    } else if (c == cmdUri) {
+    } else if (c == cmdPref) {
       if ( argLen == 0 ) {
         Serial.println(emptyArg);
       }else{
-        memset(uri, 0, sizeof(uri));
-        c.getArg(0).getValue().toCharArray(uri, sizeof(uri)-1 );
-        Serial.println("URI set to \"" + c.getArg(0).getValue() + "\"");
+        memset(mqtt_prefix, 0, sizeof(mqtt_prefix));
+        c.getArg(0).getValue().toCharArray(mqtt_prefix, sizeof(mqtt_prefix)-1 );
+        Serial.println("MQTT topic prefix set to \"" + c.getArg(0).getValue() + "\"");
       }
-    } else if (c == cmdHauth) {
+    } else if (c == cmdDns) {
       if ( argLen == 0 ) {
         Serial.println(emptyArg);
       }else{
@@ -159,28 +160,28 @@ void  loop_cli_mode(){
         if ( i > 1 ) {
           Serial.println("Argument must be 0 or 1");
         }else{
-          http_auth = (uint8_t)i;
-          if ( http_auth == 1 )
-            Serial.println("HTTP(S) authorization enabled");
+          mqtt_host_resolving = (uint8_t)i;
+          if ( mqtt_host_resolving == 1 )
+            Serial.println("Resolving mode set to DNS");
           else
-            Serial.println("HTTP(S) authorization disabled");
+            Serial.println("Resolving mode set to mDNS");
         }
       }
-    } else if (c == cmdHuser) {
+    } else if (c == cmdMuser) {
       if ( argLen == 0 ) {
         Serial.println(emptyArg);
       }else{
-        memset(http_user, 0, sizeof(http_user));
-        c.getArg(0).getValue().toCharArray(http_user, sizeof(http_user)-1 );
-        Serial.println("HTTP(S) username set to \"" + c.getArg(0).getValue() + "\"");
+        memset(mqtt_user, 0, sizeof(mqtt_user));
+        c.getArg(0).getValue().toCharArray(mqtt_user, sizeof(mqtt_user)-1 );
+        Serial.println("MQTT username set to \"" + c.getArg(0).getValue() + "\"");
       }
-    } else if (c == cmdHpassw) {
+    } else if (c == cmdMpassw) {
       if ( argLen == 0 ) {
         Serial.println(emptyArg);
       }else{
-        memset(http_passw, 0, sizeof(http_passw));
-        c.getArg(0).getValue().toCharArray(http_passw, sizeof(http_passw)-1 );
-        Serial.println("HTTP(S) password set to \"" + c.getArg(0).getValue() + "\"");
+        memset(mqtt_passw, 0, sizeof(mqtt_passw));
+        c.getArg(0).getValue().toCharArray(mqtt_passw, sizeof(mqtt_passw)-1 );
+        Serial.println("MQTT password set to \"" + c.getArg(0).getValue() + "\"");
       }
     } else if (c == cmdR1) {
       if ( argLen == 0 ) {
@@ -246,9 +247,9 @@ void  loop_cli_mode(){
       Serial.print("UPS model = \"");Serial.print(ups_model);Serial.println("\"");
       Serial.print("WiFi SSID = \"");Serial.print(ssid);Serial.println("\"");
       Serial.print("WiFi password = \"");Serial.print(passw);Serial.println("\"");
-      Serial.print("Host = \"");Serial.print(host);Serial.println("\"");
-      Serial.print("Port = \"");Serial.print(port);Serial.println("\"");
-      Serial.print("URI = \"");Serial.print(uri);Serial.println("\"");
+      Serial.print("MQTT host = \"");Serial.print(mqtt_host);Serial.println("\"");
+      Serial.print("MQTT port = \"");Serial.print(mqtt_port);Serial.println("\"");
+      Serial.print("MQTT topic prefix = \"");Serial.print(mqtt_prefix);Serial.println("\"");
       Serial.print("R1 = \"");Serial.print(R1);Serial.println("\"");
       Serial.print("R2 = \"");Serial.print(R2);Serial.println("\"");
       Serial.print("Corection = \"");Serial.print(correction_value, 4);Serial.println("\"");
@@ -257,12 +258,12 @@ void  loop_cli_mode(){
       } else {
         Serial.print("Low battery voltage = \"");Serial.print(low_battery_voltage_threshold);Serial.println("\"");
       }
-      if ( http_auth > 0 )
-        Serial.println("HTTP(S) authorization enabled");
+      if ( mqtt_host_resolving > 0 )
+        Serial.println("Resolving mode set to DNS");
       else
-        Serial.println("HTTP(S) authorization disabled");
-      Serial.print("HTTP(S) username = \"");Serial.print(http_user);Serial.println("\"");
-      Serial.print("HTTP(S) password = \"");Serial.print(http_passw);Serial.println("\"");
+        Serial.println("Resolving mode set to mDNS");
+      Serial.print("MQTT username = \"");Serial.print(mqtt_user);Serial.println("\"");
+      Serial.print("MQTT password = \"");Serial.print(mqtt_passw);Serial.println("\"");
     } else if (c == cmdReboot) {
       if ( ( argLen == 0 ) || c.getArg(0).getValue().equalsIgnoreCase("soft") ) {
         Serial.println("Reboot...");
