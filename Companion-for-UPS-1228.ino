@@ -254,6 +254,9 @@ void count_uptime() {
   uptime::calculateUptime();
   memset(str_uptime, 0, sizeof(str_uptime));
   sprintf( str_uptime, "%ud%uh%um%us", uptime::getDays(), uptime::getHours(), uptime::getMinutes(), uptime::getSeconds() );
+  if ( ( standalone_mode == 0 ) and wifi_is_ok ) {
+    MDNS.update();
+  }
 }
 
 bool is_button_pressed() {
@@ -363,7 +366,7 @@ void usual_report(){
   
   dtostrf(battery_voltage,1,2,str_batt_volt);
   
-  sprintf(str_tmp, "%s,%s,%s,%s", str_power, str_batt, str_degrees, str_batt_volt );
+  sprintf(str_tmp, "%s,%s,%s,%s,%s", str_power, str_batt, str_degrees, str_batt_volt, str_uptime );
   Serial.println( str_tmp );
   
   if ( standalone_mode ) {

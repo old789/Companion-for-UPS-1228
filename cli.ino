@@ -204,7 +204,7 @@ void  loop_cli_mode(){
           Serial.println("Argument must be greater then 0");
         }else{
           R2 = j;
-          Serial.print("R2 set to \""); Serial.print(R1); Serial.println("\"");
+          Serial.print("R2 set to \""); Serial.print(R2); Serial.println("\"");
         }
       }
     } else if (c == cmdCorrection) {
@@ -247,8 +247,14 @@ void  loop_cli_mode(){
       Serial.print("UPS model = \"");Serial.print(ups_model);Serial.println("\"");
       Serial.print("WiFi SSID = \"");Serial.print(ssid);Serial.println("\"");
       Serial.print("WiFi password = \"");Serial.print(passw);Serial.println("\"");
+      if ( mqtt_host_resolving > 0 )
+        Serial.println("Resolving mode set to DNS");
+      else
+        Serial.println("Resolving mode set to mDNS");
       Serial.print("MQTT host = \"");Serial.print(mqtt_host);Serial.println("\"");
       Serial.print("MQTT port = \"");Serial.print(mqtt_port);Serial.println("\"");
+      Serial.print("MQTT username = \"");Serial.print(mqtt_user);Serial.println("\"");
+      Serial.print("MQTT password = \"");Serial.print(mqtt_passw);Serial.println("\"");
       Serial.print("MQTT topic prefix = \"");Serial.print(mqtt_prefix);Serial.println("\"");
       Serial.print("R1 = \"");Serial.print(R1);Serial.println("\"");
       Serial.print("R2 = \"");Serial.print(R2);Serial.println("\"");
@@ -258,12 +264,6 @@ void  loop_cli_mode(){
       } else {
         Serial.print("Low battery voltage = \"");Serial.print(low_battery_voltage_threshold);Serial.println("\"");
       }
-      if ( mqtt_host_resolving > 0 )
-        Serial.println("Resolving mode set to DNS");
-      else
-        Serial.println("Resolving mode set to mDNS");
-      Serial.print("MQTT username = \"");Serial.print(mqtt_user);Serial.println("\"");
-      Serial.print("MQTT password = \"");Serial.print(mqtt_passw);Serial.println("\"");
     } else if (c == cmdReboot) {
       if ( ( argLen == 0 ) || c.getArg(0).getValue().equalsIgnoreCase("soft") ) {
         Serial.println("Reboot...");

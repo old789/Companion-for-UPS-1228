@@ -132,7 +132,7 @@ bool is_conf_correct(){
   const char msg2[] = "Config good";
 #endif
 
-  if  ( standalone > 1 ) {
+  if  ( standalone >= 1 ) {
 #ifdef DBG_SERIAL
     Serial.println(msg1);
 #endif
@@ -140,14 +140,14 @@ bool is_conf_correct(){
   } 
 
   if  ( standalone == 0 ) {
-    if (( strlen(ssid) == 0 ) ||
-        ( strlen(passw) == 0 ) ||
-        ( strlen(mqtt_host) == 0 ) ||
-        ( mqtt_port == 0 ) ||
-        ( strlen(mqtt_user) == 0 ) || 
-        ( strlen(mqtt_passw) == 0 ) ||
-        ( strlen(mqtt_prefix) == 0 ) 
-        ){
+    if (  ( strlen(ssid) == 0 ) ||
+          ( strlen(passw) == 0 ) ||
+          ( strlen(mqtt_host) == 0 ) ||
+          ( mqtt_port == 0 ) ||
+          ( strlen(mqtt_user) == 0 ) || 
+          ( strlen(mqtt_passw) == 0 ) ||
+          ( strlen(mqtt_prefix) == 0 ) 
+       ){
 #ifdef DBG_SERIAL
       Serial.println(msg1);
 #endif
