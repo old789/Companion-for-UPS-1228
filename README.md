@@ -5,10 +5,9 @@
 - Based on a ESP8266 Node MCU.
 - Compatible with the the module UPS-1228 and similar like Proline EF6012/EF9012 or Mean Well PSC-35/60/100
 - Monitor an external power state, battery voltage and temperature 
-- Publish data to the MQTT boker.
+- Publish data to the MQTT broker.
 - Send events over the serial interface to inform a local device.
 - Command line interface for the configuring.
-- An example of the remote server is in a repository 'APC_UPS_controller'
 
 ### Command line
 To enter Commadline mode, you need to press the button for 2 seconds during booting.
@@ -20,7 +19,7 @@ Communication parameters for terminal: 115200,8N1.
 | name *word* | Set UPS name, used as a device identifier on the remote server |
 | ssid *word* | Set WiFi SSID |
 | passw *word* | Set WiFi password |
-| dns *[0/1]* |  Set resolving mode: 0 - mDNS, 1 - DNS |
+| dns *digit* |  Set resolving mode: 0 - mDNS, 1 - DNS |
 | host *word* | Set destination host ( hostname or IPv4 ) |
 | port *number* | Set destination port |
 | muser *word* | Set MQTT username |
