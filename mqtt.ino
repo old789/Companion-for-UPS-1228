@@ -64,6 +64,15 @@ void send_dying_gasp(){
     Serial.print(F("Error publishing to "));
     Serial.println(topic);
   }
+  memset( topic, 0, sizeof(topic) );
+  memset( msg, 0, sizeof(msg) );
+  sprintf( topic, "%sbattery/status", topic_header);
+  strncpy( msg, "batteryDischarged", sizeof(msg)-1);
+  if (!client.publish(topic, msg)) {
+    Serial.print(F("Error publishing to "));
+    Serial.println(topic);
+  }
+
 }
 
 bool mqtt_publish(char *str_power, char *str_batt, char *str_degrees, char *str_batt_volt){
