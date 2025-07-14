@@ -24,7 +24,7 @@ Communication parameters for terminal: 115200,8N1.
 | port *number* | Set destination port |
 | muser *word* | Set MQTT username |
 | mpassw *word* | Set MQTT password |
-| prefix | Set MQTT topic starting prefix |
+| prefix *word* | Set MQTT topic starting prefix |
 | R1 *float*| Set *full* resistance of a resistor R1 in a voltage divider for ADC (kOhm)|
 | R2 *float*| Set *full* resistance of a resistor R2 in a voltage divider for ADC (kOhm)|
 | corr *float*| Set the correction coefficient for the battery voltage (like 1.033)|
