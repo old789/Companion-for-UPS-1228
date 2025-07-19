@@ -1,6 +1,7 @@
 #define DBG_SERIAL  // because just "DBG" defined in PZEM004Tv30.h ( legacy :)
 #define DBG_WIFI    // because "DEBUG_WIFI" defined in a WiFiClient library
 
+#include <Wire.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <PubSubClient.h>  // https://github.com/hmueller01/pubsubclient3
@@ -13,7 +14,7 @@
 
 #include "uptime.h"     // https://github.com/YiannisBourkelis/Uptime-Library
 
-#include <microDS18B20.h>   // https://github.com/GyverLibs/microDS18B20/
+#include <DS18B20.h>    // https://github.com/RobTillaart/DS18B20_RT
 
 #define PIN_MBSW        D1
 #define PIN_PG          D2
@@ -31,7 +32,8 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 // DS18B20 sensor
-MicroDS18B20<0> thermometer;   // D3
+OneWire oneWire1(0);   // D3
+DS18B20 thermometer(&oneWire1);
 
 // Create CLI Object
 SimpleCLI cli;
@@ -69,6 +71,7 @@ float battery_voltage = 0;
 bool no_battery = false;
 int no_battery_count = 0;
 bool low_battery = false;
+bool t_sensor = false;
 int low_battery_count = 0;
 char str_uptime[17] = "0d0h0m0s";
 char in_str[128] = {0};
@@ -190,7 +193,13 @@ void setup() {
       Serial.println("Enter to standalone mode");
 #endif
     }
-    thermometer.requestTemp();
+    t_sensor = thermometer.begin();
+    if ( t_sensor ){
+      thermometer.setResolution(12);
+      thermometer.requestTemperatures();
+    } else {
+      Serial.println("Temperture sensor fail");
+    }
     timer1.start();
     timer2.start();
     timer3.start();
@@ -338,13 +347,13 @@ void usual_report(){
   char str_batt_volt[10] = {0};
   char str_degrees[10] = {0};
   char str_tmp[128];
-  float temperature = -99;
+  float temperature = 1.23;
 
-  if ( thermometer.readTemp() ) { 
-    temperature = thermometer.getTemp();
+  if ( t_sensor and thermometer.isConversionComplete() ){
+    temperature = thermometer.getTempC();
+    thermometer.requestTemperatures();
   } 
   dtostrf(temperature,1,1,str_degrees);
-  thermometer.requestTemp();
   
   if ( external_power_state == HIGH ) {
     strncpy(str_power, "powerOk", sizeof(str_power)-1);
